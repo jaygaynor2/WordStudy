@@ -1,2 +1,60 @@
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio and Rider user files
+.vs/
 .idea/
 *.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+*.sln.DotSettings.user
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+TestResult*/
+[Tt]est[Rr]esult*/
+coverage/
+coverage.xml
+coverage.opencover.xml
+*.coverage
+*.coveragexml
+*.trx
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+*.nuget.props
+*.nuget.targets
+
+# Publish output
+publish/
+*.publishsettings
+
+# ASP.NET generated files
+Generated_Code/
+App_Data/
+
+# Node/frontend dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db

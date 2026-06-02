@@ -26,7 +26,6 @@ function App() {
   const [title, setTitle] = useState("Love in John's Gospel");
   const [translation, setTranslation] = useState("KJV");
   const [query, setQuery] = useState("love");
-  const [strongs, setStrongs] = useState("");
   const [results, setResults] = useState([]);
   const [page, setPage] = useState("verses");
   const [isAddingAll, setIsAddingAll] = useState(false);
@@ -87,7 +86,6 @@ function App() {
     setError("");
     const params = new URLSearchParams();
     if (query.trim()) params.set("query", query.trim());
-    if (strongs.trim()) params.set("strongs", strongs.trim());
     params.set("translation", translation);
     try {
       setResults(await api(`/api/verses/search?${params.toString()}`));
@@ -319,9 +317,6 @@ function App() {
                 h("form", { className: "search-grid", onSubmit: searchVerses },
                   h("label", null, "English word or reference",
                     h("input", { value: query, onChange: event => setQuery(event.target.value), placeholder: "love, faith, John 3:16" })
-                  ),
-                  h("label", null, "Strong's number",
-                    h("input", { value: strongs, onChange: event => setStrongs(event.target.value), placeholder: "G25" })
                   ),
                   h("label", null, "Translation",
                     h("select", { value: translation, onChange: event => setTranslation(event.target.value) },

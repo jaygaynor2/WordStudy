@@ -251,7 +251,7 @@ textarea {
 
 .search-grid {
   display: grid;
-  grid-template-columns: 1fr minmax(120px, 160px) minmax(120px, 160px) auto;
+  grid-template-columns: 1fr minmax(120px, 160px) auto;
   gap: 10px;
   align-items: end;
 }
