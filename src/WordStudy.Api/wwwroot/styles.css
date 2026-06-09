@@ -121,10 +121,7 @@ main {
 }
 
 .workspace {
-  display: grid;
-  grid-template-columns: minmax(260px, 330px) 1fr;
-  gap: 18px;
-  align-items: start;
+  display: block;
 }
 
 .panel,
@@ -187,11 +184,21 @@ textarea {
   border-color: var(--line);
   height: auto;
   padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .study-tab.active {
   border-color: var(--accent);
   box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.study-action {
+  color: var(--accent-strong);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .muted {
@@ -201,6 +208,18 @@ textarea {
 .content {
   display: grid;
   gap: 18px;
+}
+
+.study-page {
+  display: grid;
+  grid-template-columns: minmax(260px, 380px) 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.study-form {
+  display: grid;
+  gap: 12px;
 }
 
 .page-tabs {
@@ -347,7 +366,7 @@ textarea {
 }
 
 @media (max-width: 860px) {
-  .workspace,
+  .study-page,
   .search-grid,
   .note-form {
     grid-template-columns: 1fr;

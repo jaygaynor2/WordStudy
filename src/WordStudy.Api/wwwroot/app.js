@@ -27,14 +27,16 @@ function App() {
   const [translation, setTranslation] = useState("KJV");
   const [query, setQuery] = useState("love");
   const [results, setResults] = useState([]);
-  const [page, setPage] = useState("verses");
+  const [page, setPage] = useState("studies");
   const [isAddingAll, setIsAddingAll] = useState(false);
   const [error, setError] = useState("");
 
   const activeStudy = useMemo(
-    () => studies.find(study => study.id === activeStudyId) || studies[0],
+    () => studies.find(study => study.id === activeStudyId),
     [studies, activeStudyId]
   );
+  const canAddVerses = Boolean(activeStudy);
+  const canOpenNotes = Boolean(activeStudy?.verses.length);
 
   useEffect(() => {
     Promise.all([
@@ -182,6 +184,11 @@ function App() {
     setActiveStudyId(study.id);
   }
 
+  function selectStudy(studyId) {
+    setActiveStudyId(studyId);
+    setPage("verses");
+  }
+
   function exportStudyCsv() {
     if (!activeStudy) {
       setError("Create or select a study before exporting.");
@@ -255,64 +262,94 @@ function App() {
     h("main", null,
       error && h("div", { className: "alert", role: "alert" }, error),
       h("div", { className: "workspace" },
-        h("aside", { className: "panel stack", "aria-label": "Studies" },
-          h("section", null,
-            h("h2", null, "New Study"),
-            h("form", { className: "stack", onSubmit: createStudy },
-              h("label", null, "Study title",
-                h("input", { value: title, onChange: event => setTitle(event.target.value), required: true })
-              ),
-              h("label", null, "Translation",
-                h("select", { value: translation, onChange: event => setTranslation(event.target.value) },
-                  translations.map(item => h("option", { key: item.code, value: item.code }, `${item.code} - ${item.name}`))
-                )
-              ),
-              h("button", { type: "submit" }, "Create study")
-            )
-          ),
-          h("section", null,
-            h("h2", null, "Studies"),
-            studies.length
-              ? h("div", { className: "study-list" }, studies.map(study =>
-                  h("button", {
-                    key: study.id,
-                    className: `study-tab ${activeStudy?.id === study.id ? "active" : ""}`,
-                    onClick: () => setActiveStudyId(study.id)
-                  },
-                    h("strong", null, study.title),
-                    h("div", { className: "muted" }, `${study.translation} · ${study.verses.length} verses`)
-                  )
-                ))
-              : h("div", { className: "empty" }, "No studies yet.")
-          )
-        ),
         h("section", { className: "content" },
           h("nav", { className: "page-tabs", "aria-label": "Study workflow" },
             h("button", {
+              className: page === "studies" ? "tab active" : "tab",
+              onClick: () => setPage("studies"),
+              type: "button"
+            }, "Studies"),
+            h("button", {
               className: page === "verses" ? "tab active" : "tab",
+              disabled: !canAddVerses,
               onClick: () => setPage("verses"),
               type: "button"
             }, "Add Verses"),
             h("button", {
               className: page === "notes" ? "tab active" : "tab",
+              disabled: !canOpenNotes,
               onClick: () => setPage("notes"),
               type: "button"
             }, "Notes"),
             h("button", {
               className: "tab",
-              disabled: !activeStudy || !activeStudy.verses.length,
+              disabled: !canOpenNotes,
               onClick: exportStudyCsv,
               type: "button"
             }, "Export CSV")
           ),
-          page === "verses"
+          page === "studies"
+            ? h("div", { className: "study-page" },
+                h("section", { className: "panel" },
+                  h("div", { className: "page-title" },
+                    h("div", null,
+                      h("h2", null, "Create Study"),
+                      h("p", { className: "muted" }, "Start a focused word study with a title and translation.")
+                    )
+                  ),
+                  h("form", { className: "study-form", onSubmit: createStudy },
+                    h("label", null, "Study title",
+                      h("input", { value: title, onChange: event => setTitle(event.target.value), required: true })
+                    ),
+                    h("label", null, "Translation",
+                      h("select", { value: translation, onChange: event => setTranslation(event.target.value) },
+                        translations.map(item => h("option", { key: item.code, value: item.code }, `${item.code} - ${item.name}`))
+                      )
+                    ),
+                    h("button", { type: "submit" }, "Create study")
+                  )
+                ),
+                h("section", { className: "panel" },
+                  h("div", { className: "page-title" },
+                    h("div", null,
+                      h("h2", null, "Choose Study"),
+                      h("p", { className: "muted" }, "Pick the study that should receive verses and notes.")
+                    )
+                  ),
+                  studies.length
+                    ? h("div", { className: "study-list" }, studies.map(study =>
+                        h("button", {
+                          key: study.id,
+                          className: `study-tab ${activeStudy?.id === study.id ? "active" : ""}`,
+                          onClick: () => selectStudy(study.id),
+                          type: "button"
+                        },
+                          h("span", null,
+                            h("strong", null, study.title),
+                            h("div", { className: "muted" }, `${study.translation} · ${study.verses.length} verses`)
+                          ),
+                          h("span", { className: "study-action" }, activeStudy?.id === study.id ? "Current" : "Open")
+                        )
+                      ))
+                    : h("div", { className: "empty" }, "No studies yet.")
+                )
+              )
+            : page === "verses"
             ? h("div", { className: "panel" },
                 h("div", { className: "page-title" },
                   h("div", null,
                     h("h2", null, "Add Verses"),
                     h("p", { className: "muted" }, activeStudy ? `Adding to ${activeStudy.title}` : "Create or select a study first.")
                   ),
-                  activeStudy && h("button", { className: "secondary", onClick: () => setPage("notes"), type: "button" }, "Go to notes")
+                  h("div", { className: "page-actions" },
+                    h("button", { className: "secondary", onClick: () => setPage("studies"), type: "button" }, activeStudy ? "Change study" : "Choose study"),
+                    activeStudy && h("button", {
+                      className: "secondary",
+                      disabled: !canOpenNotes,
+                      onClick: () => setPage("notes"),
+                      type: "button"
+                    }, "Go to notes")
+                  )
                 ),
                 h("form", { className: "search-grid", onSubmit: searchVerses },
                   h("label", null, "English word or reference",
@@ -355,7 +392,10 @@ function App() {
                     h("h2", null, activeStudy ? `${activeStudy.title} Notes` : "Notes"),
                     h("p", { className: "muted" }, "Add group classifications and free-form notes to verses already in the study.")
                   ),
-                  h("button", { className: "secondary", onClick: () => setPage("verses"), type: "button" }, "Add more verses")
+                  h("div", { className: "page-actions" },
+                    h("button", { className: "secondary", onClick: () => setPage("studies"), type: "button" }, activeStudy ? "Change study" : "Choose study"),
+                    h("button", { className: "secondary", onClick: () => setPage("verses"), type: "button" }, "Add more verses")
+                  )
                 ),
                 activeStudy
                   ? h("div", { className: "verses" },
