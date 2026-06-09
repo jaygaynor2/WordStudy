@@ -1,19 +1,12 @@
 const { createElement: h, useEffect, useMemo, useState } = React;
 const STUDIES_STORAGE_KEY = "word-study:studies";
+const BIBLE_CORPUS_PATHS = ["/data/verses/KJV.json"];
 
-async function api(path, options = {}) {
-  const response = await fetch(path, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options
-  });
+async function fetchJson(path) {
+  const response = await fetch(path);
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Request failed." }));
-    throw new Error(error.message || "Request failed.");
-  }
-
-  if (response.status === 204) {
-    return null;
+    throw new Error("Request failed.");
   }
 
   return response.json();
@@ -33,8 +26,112 @@ function createId() {
   return window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function translationNameFor(code) {
+  const names = {
+    KJV: "King James Version"
+  };
+
+  return names[code.toUpperCase()] || code.toUpperCase();
+}
+
+function slug(value) {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function canonicalBookName(sourceBookName) {
+  return sourceBookName.toLowerCase() === "revelation of john" ? "Revelation" : sourceBookName;
+}
+
+function keywordsFrom(text) {
+  return text
+    .split(/[\s,.;:!?"'()[\]]+/)
+    .map(word => word.trim().toLowerCase())
+    .filter(word => word.length > 2)
+    .filter((word, index, words) => words.indexOf(word) === index);
+}
+
+function loadNestedBookCorpus(path, corpus) {
+  const translation = path.split("/").pop().replace(/\.json$/i, "").toUpperCase();
+  const verses = [];
+  let canonicalIndex = 1;
+
+  for (const book of corpus.books || []) {
+    const bookName = canonicalBookName(book.name);
+
+    for (const chapter of book.chapters || []) {
+      const chapterNumber = chapter.chapter;
+
+      for (const verse of chapter.verses || []) {
+        const verseNumber = verse.verse;
+        const reference = `${bookName} ${chapterNumber}:${verseNumber}`;
+        const text = verse.text || "";
+        verses.push({
+          id: `${translation}-${slug(bookName)}-${chapterNumber}-${verseNumber}`,
+          reference,
+          translation,
+          text,
+          canonicalIndex,
+          englishKeywords: keywordsFrom(text),
+          strongsNumbers: []
+        });
+        canonicalIndex++;
+      }
+    }
+  }
+
+  return verses;
+}
+
+function loadFlatCorpus(corpus) {
+  const translation = corpus.translation.trim().toUpperCase();
+  return (corpus.verses || []).map((verse, index) => {
+    const reference = `${verse.book} ${verse.chapter}:${verse.verse}`;
+    return {
+      id: `${translation}-${slug(verse.book)}-${verse.chapter}-${verse.verse}`,
+      reference,
+      translation,
+      text: verse.text || "",
+      canonicalIndex: index + 1,
+      englishKeywords: verse.englishKeywords || keywordsFrom(verse.text || ""),
+      strongsNumbers: verse.strongsNumbers || []
+    };
+  });
+}
+
+function loadCorpus(path, corpus) {
+  return corpus.books ? loadNestedBookCorpus(path, corpus) : loadFlatCorpus(corpus);
+}
+
+function isWholeTermMatch(value, query) {
+  return new RegExp(`(^|[^A-Za-z0-9])${escapeRegExp(query)}([^A-Za-z0-9]|$)`, "i").test(value);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function searchCatalog(verses, query, translation) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedTranslation = translation.trim().toUpperCase();
+
+  return verses
+    .filter(verse => !normalizedTranslation || verse.translation.toUpperCase() === normalizedTranslation)
+    .filter(verse => !normalizedQuery
+      || isWholeTermMatch(verse.reference, normalizedQuery)
+      || isWholeTermMatch(verse.text, normalizedQuery)
+      || verse.englishKeywords.some(keyword => keyword.toLowerCase() === normalizedQuery))
+    .sort((left, right) => left.canonicalIndex - right.canonicalIndex);
+}
+
+function translationsFrom(verses) {
+  return [...new Set(verses.map(verse => verse.translation.toUpperCase()))]
+    .sort()
+    .map(code => ({ code, name: translationNameFor(code) }));
+}
+
 function App() {
   const [translations, setTranslations] = useState([]);
+  const [verses, setVerses] = useState([]);
   const [studies, setStudies] = useState(loadStoredStudies);
   const [activeStudyId, setActiveStudyId] = useState("");
   const [title, setTitle] = useState("Love in John's Gospel");
@@ -53,13 +150,12 @@ function App() {
   const canOpenNotes = Boolean(activeStudy?.verses.length);
 
   useEffect(() => {
-    Promise.all([
-      api("/api/translations"),
-      api("/api/verses/search?query=love&translation=KJV")
-    ])
-      .then(([translationData, verseData]) => {
-        setTranslations(translationData);
-        setResults(verseData);
+    Promise.all(BIBLE_CORPUS_PATHS.map(path => fetchJson(path).then(corpus => loadCorpus(path, corpus))))
+      .then(corpora => {
+        const loadedVerses = corpora.flat();
+        setVerses(loadedVerses);
+        setTranslations(translationsFrom(loadedVerses));
+        setResults(searchCatalog(loadedVerses, query, translation));
       })
       .catch(showError);
   }, []);
@@ -92,17 +188,10 @@ function App() {
     setPage("verses");
   }
 
-  async function searchVerses(event) {
+  function searchVerses(event) {
     event.preventDefault();
     setError("");
-    const params = new URLSearchParams();
-    if (query.trim()) params.set("query", query.trim());
-    params.set("translation", translation);
-    try {
-      setResults(await api(`/api/verses/search?${params.toString()}`));
-    } catch (err) {
-      showError(err);
-    }
+    setResults(searchCatalog(verses, query, translation));
   }
 
   function addVerse(verseId) {

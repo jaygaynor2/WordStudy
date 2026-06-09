@@ -1,8 +1,8 @@
 # Bible Verse Corpus
 
-`VerseCatalog` loads every `*.json` file in this directory at startup. `KJV.json` is the active King James Version store.
+The browser app loads static JSON corpora from this directory. `KJV.json` is the active King James Version store.
 
-Use this folder for complete public-domain or properly licensed Bible translation corpora. A complete Protestant Bible contains 31,102 verses, so `VerseCatalog.HasCompleteBible("KJV")` only returns `true` when a translation has at least that many loaded verses.
+Use this folder for complete public-domain or properly licensed Bible translation corpora. A complete Protestant Bible contains 31,102 verses.
 
 ## Supported Schemas
 

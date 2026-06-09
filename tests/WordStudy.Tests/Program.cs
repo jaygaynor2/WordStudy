@@ -1,11 +1,9 @@
-using WordStudy.Api.Services;
+using System.Text.Json;
 
 var tests = new List<(string Name, Action Body)>
 {
-    ("Search finds verses by English keyword", SearchFindsEnglishKeyword),
-    ("Search matches whole words only", SearchMatchesWholeWordsOnly),
-    ("Search finds verses by reference", SearchFindsReference),
-    ("Catalog loads complete KJV Bible", CatalogLoadsCompleteKjvBible)
+    ("KJV corpus is available for frontend search", KjvCorpusIsAvailableForFrontendSearch),
+    ("KJV corpus contains a complete Bible", KjvCorpusContainsCompleteBible)
 };
 
 var failures = 0;
@@ -25,39 +23,41 @@ foreach (var (name, body) in tests)
 
 return failures == 0 ? 0 : 1;
 
-static void SearchFindsEnglishKeyword()
+static void KjvCorpusIsAvailableForFrontendSearch()
 {
-    var catalog = new VerseCatalog();
-    var results = catalog.Search("love", null, "KJV");
-    Assert(results.Count >= 3, "Expected at least three KJV love results.");
+    using var document = JsonDocument.Parse(File.ReadAllText(KjvCorpusPath()));
+    var books = document.RootElement.GetProperty("books");
+    Assert(books.GetArrayLength() == 66, "Expected the KJV corpus to contain 66 books.");
 }
 
-static void SearchFindsReference()
+static void KjvCorpusContainsCompleteBible()
 {
-    var catalog = new VerseCatalog();
-    var results = catalog.Search("John 3:16", null, "KJV");
-    Assert(results.Any(verse => verse.Reference == "John 3:16"), "Expected John 3:16 by reference search.");
+    using var document = JsonDocument.Parse(File.ReadAllText(KjvCorpusPath()));
+    var verseCount = document.RootElement
+        .GetProperty("books")
+        .EnumerateArray()
+        .SelectMany(book => book.GetProperty("chapters").EnumerateArray())
+        .SelectMany(chapter => chapter.GetProperty("verses").EnumerateArray())
+        .Count();
+
+    Assert(verseCount >= 31102, "Expected the KJV corpus to contain the complete 31,102-verse Bible.");
 }
 
-static void SearchMatchesWholeWordsOnly()
+static string KjvCorpusPath()
 {
-    var catalog = new VerseCatalog();
-    var fullWordResults = catalog.Search("beginning", null, "KJV");
-    var partialWordResults = catalog.Search("beginn", null, "KJV");
+    var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+    while (current is not null)
+    {
+        var path = Path.Combine(current.FullName, "src", "WordStudy.Web", "data", "verses", "KJV.json");
+        if (File.Exists(path))
+        {
+            return path;
+        }
 
-    Assert(fullWordResults.Any(verse => verse.Reference == "Genesis 1:1"), "Expected whole word search to find Genesis 1:1.");
-    Assert(!partialWordResults.Any(verse => verse.Reference == "Genesis 1:1"), "Expected partial word search not to find Genesis 1:1.");
-}
+        current = current.Parent;
+    }
 
-static void CatalogLoadsCompleteKjvBible()
-{
-    var catalog = new VerseCatalog();
-    Assert(catalog.TotalVerseCount >= 31102, "Expected catalog to load the complete KJV Bible.");
-    Assert(catalog.HasCompleteBible("KJV"), "Expected KJV to report complete Bible coverage.");
-    var firstVerse = catalog.FindById("KJV-GENESIS-1-1");
-    var lastVerse = catalog.FindById("KJV-REVELATION-22-21");
-    Assert(firstVerse?.Reference == "Genesis 1:1" && firstVerse.CanonicalIndex == 1, "Expected Genesis 1:1 to be index 1.");
-    Assert(lastVerse?.Reference == "Revelation 22:21" && lastVerse.CanonicalIndex == 31102, "Expected Revelation 22:21 to be index 31102.");
+    throw new InvalidOperationException("Unable to locate src/WordStudy.Web/data/verses/KJV.json.");
 }
 
 static void Assert(bool condition, string message)

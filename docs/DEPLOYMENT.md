@@ -3,16 +3,17 @@
 ## Local
 
 ```bash
-dotnet run --project src/WordStudy.Api
+cd src/WordStudy.Web
+python3 -m http.server 8080
 ```
 
-Open the URL printed by ASP.NET Core. The API serves the React frontend from `wwwroot`.
+Open `http://localhost:8080`.
 
 ## Docker
 
 ```bash
 docker build -t word-study .
-docker run --rm -p 8080:8080 word-study
+docker run --rm -p 8080:80 word-study
 ```
 
 ## Azure Container Registry

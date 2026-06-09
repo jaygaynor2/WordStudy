@@ -5,7 +5,4 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\WordStudy.Api\WordStudy.Api.csproj" />
-  </ItemGroup>
 </Project>

@@ -25,7 +25,7 @@ A project to allow users to create a word study, populate that word study with a
 ### Non-Functional Requirements
 
 - Accessibility: it should conform to WCAG 2.1 AA standards.
-- It should be constructed using a .NET/c# API and a React/JavaScript frontend.
+- It should be constructed as a static React/JavaScript frontend.
 - It should be deployed on Azure.
 - It should be versioned using Git.
 - It should be tested using unit tests and integration tests.
@@ -44,9 +44,9 @@ Describe the expected user flow, interface behavior, and important states.
 
 A word study consists of a list of verses, each with a group classification and a free-form text field for notes.
 
-## API / Integration Notes
+## Data / Integration Notes
 
-The API should be designed to be RESTful and use JSON for data transfer. It should allow callers to search for Bible verses by english word and by each word's strongs number. Word study creation, verse selection, and notes are stored in browser `localStorage`.
+The Bible corpus should be hosted as a static JSON file and searched in the browser. Word study creation, verse selection, and notes are stored in browser `localStorage`.
 
 ## Edge Cases
 
