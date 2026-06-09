@@ -17,23 +17,6 @@ app.UseCors();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 
-app.MapGet("/api/auth/config", () => Results.Ok(new
-{
-    provider = "Google",
-    configured = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")),
-    clientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID") ?? ""
-}));
-
-app.MapPost("/api/auth/dev-login", () => Results.Ok(new
-{
-    id = "dev-user",
-    name = "Dev User",
-    email = "dev@example.com",
-    provider = "Google"
-}));
-
-app.MapPost("/api/auth/logout", () => Results.NoContent());
-
 app.MapGet("/api/translations", (VerseCatalog catalog) => catalog.Translations);
 
 app.MapGet("/api/verses/catalog", (VerseCatalog catalog) => Results.Ok(new

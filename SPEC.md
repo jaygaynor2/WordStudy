@@ -25,7 +25,6 @@ A project to allow users to create a word study, populate that word study with a
 ### Non-Functional Requirements
 
 - Accessibility: it should conform to WCAG 2.1 AA standards.
-- Security: it should allow users to log in and out using their Google account.
 - It should be constructed using a .NET/c# API and a React/JavaScript frontend.
 - It should be deployed on Azure.
 - It should be versioned using Git.
@@ -49,8 +48,6 @@ A word study consists of a list of verses, each with a group classification and 
 
 The API should be designed to be RESTful and use JSON for data transfer. It should allow callers to search for Bible verses by english word and by each word's strongs number. Word study creation, verse selection, and notes are stored in browser `localStorage`.
 
-There should be an integration that allows the user to log in and out using their Google account.
-
 ## Edge Cases
 
 
@@ -62,4 +59,3 @@ There should be an integration that allows the user to log in and out using thei
 - [ ] Documentation is updated where needed.
 
 ## Open Questions
-

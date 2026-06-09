@@ -105,14 +105,6 @@ header {
   font-size: .92rem;
 }
 
-.userbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
 main {
   max-width: 1180px;
   width: 100%;
@@ -391,7 +383,4 @@ textarea {
     flex-direction: column;
   }
 
-  .userbar {
-    justify-content: flex-start;
-  }
 }

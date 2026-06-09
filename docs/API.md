@@ -2,14 +2,6 @@
 
 Base URL: `/api`
 
-## Auth
-
-- `GET /auth/config` returns whether Google OAuth is configured.
-- `POST /auth/dev-login` returns a development user for local use.
-- `POST /auth/logout` clears the current session boundary.
-
-Production Google sign-in should be connected with Azure App Service authentication or ASP.NET Core OpenID Connect using `GOOGLE_CLIENT_ID` and a client secret stored in Azure Key Vault.
-
 ## Translations
 
 - `GET /translations` lists supported Bible translations.

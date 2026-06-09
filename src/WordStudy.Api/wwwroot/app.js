@@ -34,7 +34,6 @@ function createId() {
 }
 
 function App() {
-  const [user, setUser] = useState(null);
   const [translations, setTranslations] = useState([]);
   const [studies, setStudies] = useState(loadStoredStudies);
   const [activeStudyId, setActiveStudyId] = useState("");
@@ -71,17 +70,6 @@ function App() {
 
   function showError(err) {
     setError(err.message || "Something went wrong.");
-  }
-
-  async function signIn() {
-    setError("");
-    setUser(await api("/api/auth/dev-login", { method: "POST" }));
-  }
-
-  async function signOut() {
-    setError("");
-    await api("/api/auth/logout", { method: "POST" });
-    setUser(null);
   }
 
   function createStudy(event) {
@@ -309,14 +297,6 @@ function App() {
         h("div", { className: "brand" },
           h("h1", null, "Word Study"),
           h("span", null, "Build a verse list, compare translations, and classify notes.")
-        ),
-        h("div", { className: "userbar" },
-          user
-            ? h(React.Fragment, null,
-                h("span", null, user.email),
-                h("button", { className: "secondary", onClick: signOut }, "Log out")
-              )
-            : h("button", { onClick: signIn }, "Continue with Google")
         )
       )
     ),

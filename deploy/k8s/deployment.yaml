@@ -17,12 +17,6 @@ spec:
           image: wordstudy.azurecr.io/word-study:latest
           ports:
             - containerPort: 8080
-          env:
-            - name: GOOGLE_CLIENT_ID
-              valueFrom:
-                secretKeyRef:
-                  name: word-study-auth
-                  key: google-client-id
 ---
 apiVersion: v1
 kind: Service
