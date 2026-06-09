@@ -28,4 +28,4 @@ The app stores word studies, selected verses, and notes in browser `localStorage
 
 ## Deploy
 
-GitHub Pages deployment is configured in `.github/workflows/deploy-pages.yml`. Enable GitHub Pages for the repository with source set to GitHub Actions, then push to `main`.
+GitHub Pages deployment is configured in `.github/workflows/deploy-pages.yml`. Enable GitHub Pages for the repository with source set to GitHub Actions, then push to `main`. 
