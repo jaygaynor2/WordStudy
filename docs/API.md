@@ -23,36 +23,6 @@ Translations are discovered from the loaded corpus files in `src/WordStudy.Api/D
 
 All parameters are optional. `query` matches references, verse text, and English keyword metadata. `strongs` matches Strong's numbers when a loaded corpus provides Strong's metadata.
 
-## Studies
+## Studies, Study Verses, and Notes
 
-- `GET /studies`
-- `GET /studies/{id}`
-- `POST /studies`
-
-```json
-{
-  "title": "Love in John's Gospel",
-  "translation": "ESV"
-}
-```
-
-## Study Verses
-
-- `POST /studies/{id}/verses`
-
-```json
-{
-  "verseId": "ESV-JHN-3-16"
-}
-```
-
-## Notes
-
-- `POST /studies/{studyId}/verses/{studyVerseId}/notes`
-
-```json
-{
-  "group": "Observation",
-  "text": "Love is expressed through giving."
-}
-```
+Word studies are stored in the browser with `localStorage` under the `word-study:studies` key. The API does not persist study, verse selection, or note data.

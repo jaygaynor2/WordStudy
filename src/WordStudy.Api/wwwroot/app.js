@@ -1,4 +1,5 @@
 const { createElement: h, useEffect, useMemo, useState } = React;
+const STUDIES_STORAGE_KEY = "word-study:studies";
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -18,10 +19,24 @@ async function api(path, options = {}) {
   return response.json();
 }
 
+function loadStoredStudies() {
+  try {
+    const stored = window.localStorage.getItem(STUDIES_STORAGE_KEY);
+    const studies = stored ? JSON.parse(stored) : [];
+    return Array.isArray(studies) ? studies : [];
+  } catch {
+    return [];
+  }
+}
+
+function createId() {
+  return window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function App() {
   const [user, setUser] = useState(null);
   const [translations, setTranslations] = useState([]);
-  const [studies, setStudies] = useState([]);
+  const [studies, setStudies] = useState(loadStoredStudies);
   const [activeStudyId, setActiveStudyId] = useState("");
   const [title, setTitle] = useState("Love in John's Gospel");
   const [translation, setTranslation] = useState("KJV");
@@ -41,16 +56,18 @@ function App() {
   useEffect(() => {
     Promise.all([
       api("/api/translations"),
-      api("/api/studies"),
       api("/api/verses/search?query=love&translation=KJV")
     ])
-      .then(([translationData, studyData, verseData]) => {
+      .then(([translationData, verseData]) => {
         setTranslations(translationData);
-        setStudies(studyData);
         setResults(verseData);
       })
       .catch(showError);
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(STUDIES_STORAGE_KEY, JSON.stringify(studies));
+  }, [studies]);
 
   function showError(err) {
     setError(err.message || "Something went wrong.");
@@ -67,20 +84,24 @@ function App() {
     setUser(null);
   }
 
-  async function createStudy(event) {
+  function createStudy(event) {
     event.preventDefault();
     setError("");
-    try {
-      const study = await api("/api/studies", {
-        method: "POST",
-        body: JSON.stringify({ title, translation })
-      });
-      setStudies([study, ...studies]);
-      setActiveStudyId(study.id);
-      setPage("verses");
-    } catch (err) {
-      showError(err);
+    if (!title.trim()) {
+      setError("Study title is required.");
+      return;
     }
+
+    const study = {
+      id: createId(),
+      title: title.trim(),
+      translation,
+      createdAt: new Date().toISOString(),
+      verses: []
+    };
+    setStudies(current => [study, ...current]);
+    setActiveStudyId(study.id);
+    setPage("verses");
   }
 
   async function searchVerses(event) {
@@ -96,25 +117,39 @@ function App() {
     }
   }
 
-  async function addVerse(verseId) {
+  function addVerse(verseId) {
     if (!activeStudy) {
       setError("Create or select a study first.");
       return;
     }
 
-    setError("");
-    try {
-      await api(`/api/studies/${activeStudy.id}/verses`, {
-        method: "POST",
-        body: JSON.stringify({ verseId })
-      });
-      await refreshStudy(activeStudy.id);
-    } catch (err) {
-      showError(err);
+    const verse = results.find(item => item.id === verseId);
+    if (!verse) {
+      setError("Search for the verse before adding it.");
+      return;
     }
+
+    setError("");
+    setStudies(current => current.map(study => {
+      if (study.id !== activeStudy.id) {
+        return study;
+      }
+
+      if (study.verses.some(studyVerse => studyVerse.verse.id === verse.id)) {
+        return study;
+      }
+
+      return {
+        ...study,
+        verses: [
+          ...study.verses,
+          { id: createId(), verse, notes: [] }
+        ]
+      };
+    }));
   }
 
-  async function addAllSearchResults() {
+  function addAllSearchResults() {
     if (!activeStudy) {
       setError("Create or select a study first.");
       return;
@@ -127,61 +162,87 @@ function App() {
 
     setError("");
     setIsAddingAll(true);
-    try {
-      for (const verse of results) {
-        await api(`/api/studies/${activeStudy.id}/verses`, {
-          method: "POST",
-          body: JSON.stringify({ verseId: verse.id })
-        });
+    setStudies(current => current.map(study => {
+      if (study.id !== activeStudy.id) {
+        return study;
       }
-      await refreshStudy(activeStudy.id);
-    } catch (err) {
-      showError(err);
-    } finally {
-      setIsAddingAll(false);
-    }
+
+      const existingVerseIds = new Set(study.verses.map(studyVerse => studyVerse.verse.id));
+      const newEntries = results
+        .filter(verse => !existingVerseIds.has(verse.id))
+        .map(verse => ({ id: createId(), verse, notes: [] }));
+
+      return {
+        ...study,
+        verses: [...study.verses, ...newEntries]
+      };
+    }));
+    setIsAddingAll(false);
   }
 
-  async function addNote(studyVerseId, form) {
+  function addNote(studyVerseId, form) {
     const formData = new FormData(form);
-    const group = formData.get("group");
-    const text = formData.get("text");
+    const group = String(formData.get("group") || "");
+    const text = String(formData.get("text") || "");
 
     setError("");
-    try {
-      await api(`/api/studies/${activeStudy.id}/verses/${studyVerseId}/notes`, {
-        method: "POST",
-        body: JSON.stringify({ group, text })
-      });
-      form.reset();
-      form.elements.group.focus();
-      await refreshStudy(activeStudy.id);
-    } catch (err) {
-      showError(err);
-    }
+    setStudies(current => current.map(study => {
+      if (study.id !== activeStudy.id) {
+        return study;
+      }
+
+      return {
+        ...study,
+        verses: study.verses.map(studyVerse => {
+          if (studyVerse.id !== studyVerseId) {
+            return studyVerse;
+          }
+
+          return {
+            ...studyVerse,
+            notes: [
+              ...studyVerse.notes,
+              {
+                id: createId(),
+                group: group.trim(),
+                text: text.trim(),
+                createdAt: new Date().toISOString()
+              }
+            ]
+          };
+        })
+      };
+    }));
+    form.reset();
+    form.elements.group.focus();
   }
 
-  async function deleteNote(studyVerseId, noteId) {
+  function deleteNote(studyVerseId, noteId) {
     if (!activeStudy) {
       setError("Create or select a study first.");
       return;
     }
 
     setError("");
-    try {
-      await api(`/api/studies/${activeStudy.id}/verses/${studyVerseId}/notes/${noteId}`, {
-        method: "DELETE"
-      });
-      await refreshStudy(activeStudy.id);
-    } catch (err) {
-      showError(err);
-    }
-  }
+    setStudies(current => current.map(study => {
+      if (study.id !== activeStudy.id) {
+        return study;
+      }
 
-  async function refreshStudy(studyId) {
-    const study = await api(`/api/studies/${studyId}`);
-    setStudies(current => current.map(item => item.id === study.id ? study : item));
-    setActiveStudyId(study.id);
+      return {
+        ...study,
+        verses: study.verses.map(studyVerse => {
+          if (studyVerse.id !== studyVerseId) {
+            return studyVerse;
+          }
+
+          return {
+            ...studyVerse,
+            notes: studyVerse.notes.filter(note => note.id !== noteId)
+          };
+        })
+      };
+    }));
   }
 
   function selectStudy(studyId) {

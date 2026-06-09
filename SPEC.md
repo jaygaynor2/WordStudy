@@ -47,7 +47,7 @@ A word study consists of a list of verses, each with a group classification and 
 
 ## API / Integration Notes
 
-The API should be designed to be RESTful and use JSON for data transfer. It should allow callers to search for Bible verses by english word and by each word's strongs number. It should allow the creation of a word study, the addition of verses to a word study, and the attachment of notes to each verse within a word study.
+The API should be designed to be RESTful and use JSON for data transfer. It should allow callers to search for Bible verses by english word and by each word's strongs number. Word study creation, verse selection, and notes are stored in browser `localStorage`.
 
 There should be an integration that allows the user to log in and out using their Google account.
 
@@ -62,5 +62,4 @@ There should be an integration that allows the user to log in and out using thei
 - [ ] Documentation is updated where needed.
 
 ## Open Questions
-
 

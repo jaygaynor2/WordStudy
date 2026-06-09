@@ -24,4 +24,4 @@ dotnet run --project tests/WordStudy.Tests
 
 ## Notes
 
-The app uses in-memory study storage so the product can run locally without database setup. The King James Version verse store is loaded from `src/WordStudy.Api/Data/verses/KJV.json` and contains the full 31,102-verse Bible. Production should add persistent study storage, full Google OpenID Connect, and licensed translation providers for non-public-domain translations.
+The app stores word studies, selected verses, and notes in browser `localStorage` so the product can run locally without database setup. The King James Version verse store is loaded from `src/WordStudy.Api/Data/verses/KJV.json` and contains the full 31,102-verse Bible. Production should add cross-device persistent study storage, full Google OpenID Connect, and licensed translation providers for non-public-domain translations.
