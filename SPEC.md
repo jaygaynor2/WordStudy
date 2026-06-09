@@ -26,15 +26,10 @@ A project to allow users to create a word study, populate that word study with a
 
 - Accessibility: it should conform to WCAG 2.1 AA standards.
 - It should be constructed as a static React/JavaScript frontend.
-- It should be deployed on Azure.
 - It should be versioned using Git.
 - It should be tested using unit tests and integration tests.
 - It should be documented using Markdown.
-- It should be deployed using Docker.
-- It should be deployed using Kubernetes.
-- It should be deployed using Azure App Service.
-- It should be deployed using Azure Container Registry.
-- It should be deployed using Azure Kubernetes Service.
+- It should be deployable using GitHub Pages.
 
 ## User Experience
 

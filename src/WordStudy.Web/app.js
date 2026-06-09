@@ -1,6 +1,6 @@
 const { createElement: h, useEffect, useMemo, useRef, useState } = React;
 const STUDIES_STORAGE_KEY = "word-study:studies";
-const BIBLE_CORPUS_PATHS = ["/data/verses/KJV.json"];
+const BIBLE_CORPUS_PATHS = ["data/verses/KJV.json"];
 const DEFAULT_TITLE = "";
 const DEFAULT_TRANSLATION = "KJV";
 const DEFAULT_QUERY = "";
@@ -175,6 +175,16 @@ function App() {
     () => studies.find(study => study.id === activeStudyId),
     [studies, activeStudyId]
   );
+  const noteGroups = useMemo(() => {
+    if (!activeStudy) {
+      return [];
+    }
+
+    return [...new Set(activeStudy.verses
+      .flatMap(studyVerse => studyVerse.notes.map(note => note.group.trim()))
+      .filter(Boolean))]
+      .sort((left, right) => left.localeCompare(right));
+  }, [activeStudy]);
   const canAddVerses = Boolean(activeStudy);
   const canOpenNotes = Boolean(activeStudy?.verses.length);
 
@@ -636,6 +646,9 @@ function App() {
                     h("button", { className: "secondary", onClick: () => setPage("verses"), type: "button" }, "Add more verses")
                   )
                 ),
+                h("datalist", { id: "current-study-note-groups" },
+                  noteGroups.map(group => h("option", { key: group, value: group }))
+                ),
                 activeStudy
                   ? h("div", { className: "verses" },
                       activeStudy.verses.length
@@ -650,7 +663,12 @@ function App() {
                               }
                             },
                               h("label", null, "Group",
-                                h("input", { name: "group", placeholder: "Observation", required: true })
+                                h("input", {
+                                  list: "current-study-note-groups",
+                                  name: "group",
+                                  placeholder: "Observation",
+                                  required: true
+                                })
                               ),
                               h("label", null, "Note",
                                 h("textarea", { name: "text", placeholder: "Add a note for this verse", required: true })
