@@ -4,6 +4,7 @@ const BIBLE_CORPUS_PATHS = ["data/verses/KJV.json"];
 const DEFAULT_TITLE = "";
 const DEFAULT_TRANSLATION = "KJV";
 const DEFAULT_QUERY = "";
+//this is a comment
 
 
 async function fetchJson(path) {
