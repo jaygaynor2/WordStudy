@@ -28,10 +28,16 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Prepare static site
+        run: |
+          mkdir -p _site
+          cp -R src/WordStudy.Web/. _site/
+          test -f _site/index.html
+
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: src/WordStudy.Web
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
