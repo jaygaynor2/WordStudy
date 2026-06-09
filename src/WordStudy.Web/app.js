@@ -1,6 +1,9 @@
-const { createElement: h, useEffect, useMemo, useState } = React;
+const { createElement: h, useEffect, useMemo, useRef, useState } = React;
 const STUDIES_STORAGE_KEY = "word-study:studies";
 const BIBLE_CORPUS_PATHS = ["/data/verses/KJV.json"];
+const DEFAULT_TITLE = "";
+const DEFAULT_TRANSLATION = "KJV";
+const DEFAULT_QUERY = "";
 
 async function fetchJson(path) {
   const response = await fetch(path);
@@ -20,6 +23,30 @@ function loadStoredStudies() {
   } catch {
     return [];
   }
+}
+
+function appStorageSnapshot() {
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    localStorage: {
+      [STUDIES_STORAGE_KEY]: window.localStorage.getItem(STUDIES_STORAGE_KEY) || "[]"
+    }
+  };
+}
+
+function studiesFromBackup(backup) {
+  if (Array.isArray(backup)) {
+    return backup;
+  }
+
+  const storedStudies = backup?.localStorage?.[STUDIES_STORAGE_KEY] ?? backup?.[STUDIES_STORAGE_KEY];
+  const studies = typeof storedStudies === "string" ? JSON.parse(storedStudies) : storedStudies;
+  if (!Array.isArray(studies)) {
+    throw new Error("Backup file does not contain Word Study data.");
+  }
+
+  return studies;
 }
 
 function createId() {
@@ -130,15 +157,17 @@ function translationsFrom(verses) {
 }
 
 function App() {
+  const importInputRef = useRef(null);
   const [translations, setTranslations] = useState([]);
   const [verses, setVerses] = useState([]);
   const [studies, setStudies] = useState(loadStoredStudies);
   const [activeStudyId, setActiveStudyId] = useState("");
-  const [title, setTitle] = useState("Love in John's Gospel");
-  const [translation, setTranslation] = useState("KJV");
-  const [query, setQuery] = useState("love");
+  const [title, setTitle] = useState(DEFAULT_TITLE);
+  const [translation, setTranslation] = useState(DEFAULT_TRANSLATION);
+  const [query, setQuery] = useState(DEFAULT_QUERY);
   const [results, setResults] = useState([]);
   const [page, setPage] = useState("studies");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [isAddingAll, setIsAddingAll] = useState(false);
   const [error, setError] = useState("");
 
@@ -327,6 +356,64 @@ function App() {
     setPage("verses");
   }
 
+  function exportLocalStorage() {
+    const backup = appStorageSnapshot();
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `word-study-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setSettingsOpen(false);
+    setError("");
+  }
+
+  function chooseImportFile() {
+    importInputRef.current?.click();
+  }
+
+  async function importLocalStorage(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+
+    try {
+      const backup = JSON.parse(await file.text());
+      const importedStudies = studiesFromBackup(backup);
+      window.localStorage.setItem(STUDIES_STORAGE_KEY, JSON.stringify(importedStudies));
+      setStudies(importedStudies);
+      setActiveStudyId("");
+      setPage("studies");
+      setSettingsOpen(false);
+      setError("Backup restored.");
+    } catch (err) {
+      showError(err);
+    }
+  }
+
+  function resetApplication() {
+    const confirmed = window.confirm("Clear all Word Study data from this browser and reset the application?");
+    if (!confirmed) {
+      return;
+    }
+
+    window.localStorage.removeItem(STUDIES_STORAGE_KEY);
+    setStudies([]);
+    setActiveStudyId("");
+    setTitle(DEFAULT_TITLE);
+    setTranslation(DEFAULT_TRANSLATION);
+    setQuery(DEFAULT_QUERY);
+    setResults(searchCatalog(verses, DEFAULT_QUERY, DEFAULT_TRANSLATION));
+    setPage("studies");
+    setSettingsOpen(false);
+    setError("Application data cleared.");
+  }
+
   function exportStudyCsv() {
     if (!activeStudy) {
       setError("Create or select a study before exporting.");
@@ -386,6 +473,28 @@ function App() {
         h("div", { className: "brand" },
           h("h1", null, "Word Study"),
           h("span", null, "Build a verse list, compare translations, and classify notes.")
+        ),
+        h("div", { className: "settings" },
+          h("button", {
+            "aria-expanded": settingsOpen,
+            "aria-label": "Application settings",
+            className: "icon-button",
+            onClick: () => setSettingsOpen(open => !open),
+            title: "Application settings",
+            type: "button"
+          }, "⚙"),
+          settingsOpen && h("div", { className: "settings-menu" },
+            h("button", { className: "settings-item", onClick: exportLocalStorage, type: "button" }, "Export backup"),
+            h("button", { className: "settings-item", onClick: chooseImportFile, type: "button" }, "Import backup"),
+            h("button", { className: "settings-item danger", onClick: resetApplication, type: "button" }, "Clear and reset")
+          ),
+          h("input", {
+            accept: "application/json,.json",
+            className: "hidden-input",
+            onChange: importLocalStorage,
+            ref: importInputRef,
+            type: "file"
+          })
         )
       )
     ),

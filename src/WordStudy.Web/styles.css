@@ -105,6 +105,55 @@ header {
   font-size: .92rem;
 }
 
+.settings {
+  position: relative;
+}
+
+.icon-button {
+  width: 40px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.settings-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 10;
+  min-width: 190px;
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 14px 34px rgb(23 32 42 / 14%);
+}
+
+.settings-item {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+}
+
+.settings-item:hover {
+  background: #eef7f6;
+}
+
+.settings-item.danger {
+  color: #b42318;
+}
+
+.hidden-input {
+  display: none;
+}
+
 main {
   max-width: 1180px;
   width: 100%;
@@ -380,7 +429,6 @@ textarea {
 
   .topbar {
     align-items: flex-start;
-    flex-direction: column;
   }
 
 }
