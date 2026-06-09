@@ -5,6 +5,7 @@ const DEFAULT_TITLE = "";
 const DEFAULT_TRANSLATION = "KJV";
 const DEFAULT_QUERY = "";
 
+
 async function fetchJson(path) {
   const response = await fetch(path);
 
