@@ -48,7 +48,7 @@ static string KjvCorpusPath()
     var current = new DirectoryInfo(Directory.GetCurrentDirectory());
     while (current is not null)
     {
-        var path = Path.Combine(current.FullName, "src", "WordStudy.Web", "data", "verses", "KJV.json");
+        var path = Path.Combine(current.FullName, "src", "data", "verses", "KJV.json");
         if (File.Exists(path))
         {
             return path;
@@ -57,7 +57,7 @@ static string KjvCorpusPath()
         current = current.Parent;
     }
 
-    throw new InvalidOperationException("Unable to locate src/WordStudy.Web/data/verses/KJV.json.");
+    throw new InvalidOperationException("Unable to locate src/data/verses/KJV.json.");
 }
 
 static void Assert(bool condition, string message)

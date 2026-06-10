@@ -4,16 +4,23 @@ A Bible word-study product built from the project specification. Users can creat
 
 ## Tech Stack
 
-- Static React frontend
-- Browser `localStorage` for word studies
-- GitHub Pages deployment
+- Expo / React Native app
+- React Native Web static export for GitHub Pages
+- AsyncStorage-backed local study storage
 - Markdown data and deployment documentation
 
 ## Run
 
 ```bash
-cd src/WordStudy.Web
-python3 -m http.server 8080
+npm install
+npm run web
+```
+
+Native previews:
+
+```bash
+npm run ios
+npm run android
 ```
 
 ## Test
@@ -24,8 +31,8 @@ dotnet run --project tests/WordStudy.Tests
 
 ## Notes
 
-The app stores word studies, selected verses, and notes in browser `localStorage` so the product can run locally without database setup. The King James Version verse store is loaded from `src/WordStudy.Web/data/verses/KJV.json` and contains the full 31,102-verse Bible. Production should add cross-device persistent study storage and licensed translation providers for non-public-domain translations.
+The app stores word studies, selected verses, and notes in local device/browser storage so the product can run without database setup. The King James Version verse store is bundled from `src/data/verses/KJV.json` and contains the full 31,102-verse Bible. Production should add cross-device persistent study storage and licensed translation providers for non-public-domain translations.
 
 ## Deploy
 
-GitHub Pages deployment is configured in `.github/workflows/deploy-pages.yml`. Enable GitHub Pages for the repository with source set to GitHub Actions, then push to `main`. 
+GitHub Pages deployment is configured in `.github/workflows/deploy-pages.yml`. Enable GitHub Pages for the repository with source set to GitHub Actions, then push to `main`. The workflow runs `npm run export:web` and publishes the Expo web export.

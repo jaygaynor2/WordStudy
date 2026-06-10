@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Word Study",
+    "slug": "word-study",
+    "version": "1.0.0",
+    "orientation": "default",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.wordstudy"
+    },
+    "android": {
+      "package": "com.example.wordstudy"
+    }
+  }
+}

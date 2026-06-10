@@ -1,0 +1,29 @@
+{
+  "name": "word-study",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "export:web": "expo export --platform web --output-dir dist"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "latest",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "latest",
+    "expo-document-picker": "latest",
+    "expo-file-system": "latest",
+    "expo-sharing": "latest",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.85.3",
+    "react-native-web": "latest"
+  },
+  "devDependencies": {
+    "@babel/core": "latest",
+    "babel-preset-expo": "latest"
+  }
+}

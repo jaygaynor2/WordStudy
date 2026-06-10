@@ -1,6 +1,6 @@
 # Bible Verse Corpus
 
-The browser app loads static JSON corpora from this directory. `KJV.json` is the active King James Version store.
+The Expo app bundles JSON corpora from this directory. `KJV.json` is the active King James Version store.
 
 Use this folder for complete public-domain or properly licensed Bible translation corpora. A complete Protestant Bible contains 31,102 verses.
 

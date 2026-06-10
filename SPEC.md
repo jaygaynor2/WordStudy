@@ -25,11 +25,11 @@ A project to allow users to create a word study, populate that word study with a
 ### Non-Functional Requirements
 
 - Accessibility: it should conform to WCAG 2.1 AA standards.
-- It should be constructed as a static React/JavaScript frontend.
+- It should be constructed as an Expo / React Native app with React Native Web export.
 - It should be versioned using Git.
 - It should be tested using unit tests and integration tests.
 - It should be documented using Markdown.
-- It should be deployable using GitHub Pages.
+- It should be deployable to GitHub Pages and buildable as a native app.
 
 ## User Experience
 
@@ -41,7 +41,7 @@ A word study consists of a list of verses, each with a group classification and 
 
 ## Data / Integration Notes
 
-The Bible corpus should be hosted as a static JSON file and searched in the browser. Word study creation, verse selection, and notes are stored in browser `localStorage`.
+The Bible corpus should be bundled as JSON and searched on-device. Word study creation, verse selection, and notes are stored in local app storage.
 
 ## Edge Cases
 

@@ -1,5 +1,5 @@
 # Word Study Data
 
-Word Study is a static browser app. It does not expose an application API.
+Word Study is an Expo / React Native app. It does not expose an application API.
 
-The frontend loads the Bible corpus from `src/WordStudy.Web/data/verses/KJV.json`, searches it in the browser, and stores word studies, selected verses, and notes in browser `localStorage` under the `word-study:studies` key.
+The app bundles the Bible corpus from `src/data/verses/KJV.json`, searches it on-device, and stores word studies, selected verses, and notes in local app storage under the `word-study:studies` key.
