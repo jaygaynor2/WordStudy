@@ -532,7 +532,13 @@ export default function App() {
         </View>
         <View style={styles.searchGrid}>
           <Field label="English word or reference">
-            <TextInput value={query} onChangeText={setQuery} placeholder="love, faith, John 3:16" style={styles.input} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="love, faith, John 3:16"
+              placeholderTextColor="#8a96a3"
+              style={styles.input}
+            />
           </Field>
           <Button label="Search" onPress={searchVerses} />
         </View>
@@ -574,6 +580,7 @@ export default function App() {
                       value={draft.group}
                       onChangeText={value => updateNoteDraft(studyVerse.id, "group", value)}
                       placeholder="Observation"
+                      placeholderTextColor="#8a96a3"
                       style={styles.input}
                     />
                   </Field>
@@ -592,6 +599,7 @@ export default function App() {
                       onChangeText={value => updateNoteDraft(studyVerse.id, "text", value)}
                       multiline
                       placeholder="Add a note for this verse"
+                      placeholderTextColor="#8a96a3"
                       style={[styles.input, styles.textArea]}
                     />
                   </Field>
