@@ -664,9 +664,11 @@ export default function App() {
             <TextInput
               value={query}
               onChangeText={setQuery}
+              onSubmitEditing={searchVerses}
               placeholder="love, faith, John 3:16, G25"
               placeholderTextColor="#8a96a3"
               style={styles.input}
+              returnKeyType="search"
             />
           </Field>
           <Button label={searchLoading ? "Searching..." : "Search"} disabled={searchLoading} onPress={searchVerses} />
