@@ -51,4 +51,4 @@ The loader also supports a flat translation corpus:
 }
 ```
 
-`englishKeywords` and `strongsNumbers` are optional in the flat schema. If keywords are omitted, they are generated from verse text. The nested KJV file does not include Strong's metadata, so Strong's searches only return results for corpora that provide those numbers.
+`englishKeywords` and `strongsNumbers` are optional in the flat schema. If keywords are omitted, they are generated from verse text. The nested KJV file does not include bundled Strong's metadata. In the current Expo app, Strong's-number searches such as `G25` or `H430` are sourced remotely from Bible SuperSearch's `kjv_strongs` module instead of this local corpus.

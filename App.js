@@ -24,6 +24,8 @@ const STUDIES_STORAGE_KEY = "word-study:studies";
 const DEFAULT_TITLE = "";
 const DEFAULT_TRANSLATION = "KJV";
 const DEFAULT_QUERY = "";
+const BIBLE_SUPERSEARCH_API_URL = "https://api.biblesupersearch.com/api";
+const STRONGS_BIBLE_MODULE = "kjv_strongs";
 
 function createId() {
   return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -31,7 +33,8 @@ function createId() {
 
 function translationNameFor(code) {
   const names = {
-    KJV: "King James Version"
+    KJV: "King James Version",
+    KJV_STRONGS: "King James Version with Strong's"
   };
 
   return names[code.toUpperCase()] || code.toUpperCase();
@@ -107,6 +110,104 @@ function searchCatalog(verses, query, translation) {
     .sort((left, right) => left.canonicalIndex - right.canonicalIndex);
 }
 
+function bookNamesFrom(corpus) {
+  return (corpus.books || []).reduce((names, book, index) => ({
+    ...names,
+    [index + 1]: canonicalBookName(book.name)
+  }), {});
+}
+
+function normalizedStrongsQuery(query) {
+  const match = query.trim().toUpperCase().match(/^([HG])0*([0-9]{1,5})$/);
+  if (!match) {
+    return "";
+  }
+
+  return `${match[1]}${Number(match[2])}`;
+}
+
+function decodeHtmlEntities(value) {
+  const namedEntities = {
+    amp: "&",
+    apos: "'",
+    gt: ">",
+    lt: "<",
+    nbsp: " ",
+    quot: "\""
+  };
+
+  return String(value || "")
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&([a-z]+);/gi, (_, entity) => namedEntities[entity.toLowerCase()] || `&${entity};`);
+}
+
+function stripHtml(value) {
+  return decodeHtmlEntities(value).replace(/<[^>]*>/g, "");
+}
+
+function strongsNumbersFrom(text) {
+  return [...new Set((text.match(/[HG]\d{1,5}/gi) || []).map(number => number.toUpperCase()))];
+}
+
+function cleanStrongsVerseText(text) {
+  return stripHtml(text)
+    .replace(/\{\(?[HG]\d{1,5}\)?\}/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeBibleSuperSearchResults(data, strongsNumber, bookNames) {
+  const rawResults = data?.results?.[STRONGS_BIBLE_MODULE] || [];
+
+  return rawResults.map(verse => {
+    const bookName = bookNames[Number(verse.book)] || `Book ${verse.book}`;
+    const chapter = Number(verse.chapter);
+    const verseNumber = Number(verse.verse);
+    const strongsNumbers = strongsNumbersFrom(verse.text);
+
+    return {
+      id: `bss-${STRONGS_BIBLE_MODULE}-${verse.id}`,
+      reference: `${bookName} ${chapter}:${verseNumber}`,
+      translation: "KJV_STRONGS",
+      text: cleanStrongsVerseText(verse.text),
+      canonicalIndex: Number(verse.id) || 0,
+      englishKeywords: [],
+      strongsNumbers,
+      source: "Bible SuperSearch",
+      matchedStrongsNumber: strongsNumber
+    };
+  });
+}
+
+async function searchBibleSuperSearchByStrongs(query, bookNames) {
+  const strongsNumber = normalizedStrongsQuery(query);
+  if (!strongsNumber) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    bible: STRONGS_BIBLE_MODULE,
+    search: strongsNumber,
+    data_format: "minimal",
+    page_limit: "100",
+    markup: "raw"
+  });
+  const response = await fetch(`${BIBLE_SUPERSEARCH_API_URL}?${params.toString()}`);
+  const data = await response.json();
+
+  if (!response.ok || data.error_level >= 4) {
+    throw new Error(data.errors?.join(" ") || "Bible SuperSearch could not complete the Strong's search.");
+  }
+
+  return {
+    strongsNumber,
+    definitions: data.strongs || [],
+    paging: data.paging,
+    verses: normalizeBibleSuperSearchResults(data, strongsNumber, bookNames)
+  };
+}
+
 function translationsFrom(verses) {
   return [...new Set(verses.map(verse => verse.translation.toUpperCase()))]
     .sort()
@@ -154,6 +255,7 @@ function downloadWebFile(contents, fileName, type) {
 
 export default function App() {
   const verses = useMemo(() => loadNestedBookCorpus(kjvCorpus), []);
+  const bookNames = useMemo(() => bookNamesFrom(kjvCorpus), []);
   const translations = useMemo(() => translationsFrom(verses), [verses]);
   const [studies, setStudies] = useState([]);
   const [activeStudyId, setActiveStudyId] = useState("");
@@ -161,6 +263,9 @@ export default function App() {
   const [translation, setTranslation] = useState(DEFAULT_TRANSLATION);
   const [query, setQuery] = useState(DEFAULT_QUERY);
   const [results, setResults] = useState([]);
+  const [searchInfo, setSearchInfo] = useState("");
+  const [strongsDefinitions, setStrongsDefinitions] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [page, setPage] = useState("studies");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [error, setError] = useState("");
@@ -227,9 +332,31 @@ export default function App() {
     setPage("verses");
   }
 
-  function searchVerses() {
+  async function searchVerses() {
     setError("");
-    setResults(searchCatalog(verses, query, translation));
+    setSearchInfo("");
+    setStrongsDefinitions([]);
+
+    const strongsNumber = normalizedStrongsQuery(query);
+    if (!strongsNumber) {
+      setResults(searchCatalog(verses, query, translation));
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const strongsSearch = await searchBibleSuperSearchByStrongs(strongsNumber, bookNames);
+      setResults(strongsSearch.verses);
+      setStrongsDefinitions(strongsSearch.definitions);
+      const total = strongsSearch.paging?.total ?? strongsSearch.verses.length;
+      const capped = total > strongsSearch.verses.length ? ` Showing first ${strongsSearch.verses.length}.` : "";
+      setSearchInfo(`${strongsSearch.strongsNumber} search from Bible SuperSearch found ${total} result${total === 1 ? "" : "s"}.${capped}`);
+    } catch (err) {
+      showError(err);
+      setResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
   }
 
   function addVerse(verseId) {
@@ -434,6 +561,8 @@ export default function App() {
       setTranslation(DEFAULT_TRANSLATION);
       setQuery(DEFAULT_QUERY);
       setResults(searchCatalog(verses, DEFAULT_QUERY, DEFAULT_TRANSLATION));
+      setSearchInfo("");
+      setStrongsDefinitions([]);
       setPage("studies");
       setSettingsOpen(false);
       setError("Application data cleared.");
@@ -535,13 +664,25 @@ export default function App() {
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="love, faith, John 3:16"
+              placeholder="love, faith, John 3:16, G25"
               placeholderTextColor="#8a96a3"
               style={styles.input}
             />
           </Field>
-          <Button label="Search" onPress={searchVerses} />
+          <Button label={searchLoading ? "Searching..." : "Search"} disabled={searchLoading} onPress={searchVerses} />
         </View>
+        {searchInfo ? <Text style={styles.muted}>{searchInfo}</Text> : null}
+        {strongsDefinitions.length ? (
+          <View style={styles.strongsPanel}>
+            {strongsDefinitions.map(definition => (
+              <View key={`${definition.number}-${definition.id}`} style={styles.strongsDefinition}>
+                <Text style={styles.reference}>{definition.number} {stripHtml(definition.transliteration || "")}</Text>
+                <Text style={styles.muted}>{stripHtml(definition.pronunciation || "")}</Text>
+                <Text style={styles.verseText}>{stripHtml(definition.entry || "")}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
         <View style={styles.bulkActions}>
           <Text style={styles.muted}>{results.length} search {results.length === 1 ? "result" : "results"}</Text>
           <Button label="Add all results" secondary disabled={!activeStudy || !results.length} onPress={addAllSearchResults} />
@@ -721,6 +862,13 @@ function VerseResult({ verse, onAdd }) {
         <Button label="Add" secondary onPress={onAdd} />
       </View>
       <Text style={styles.verseText}>{verse.text}</Text>
+      {verse.source || verse.strongsNumbers?.length ? (
+        <View style={styles.metaRow}>
+          {verse.source ? <Text style={styles.metaPill}>{verse.source}</Text> : null}
+          {verse.matchedStrongsNumber ? <Text style={styles.metaPill}>{verse.matchedStrongsNumber}</Text> : null}
+          {verse.strongsNumbers?.slice(0, 8).map(number => <Text key={number} style={styles.metaPill}>{number}</Text>)}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -959,6 +1107,34 @@ const styles = StyleSheet.create({
     color: "#17202a",
     lineHeight: 22,
     marginTop: 8
+  },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 10
+  },
+  metaPill: {
+    borderColor: "#99f6e4",
+    borderWidth: 1,
+    borderRadius: 14,
+    color: "#115e59",
+    backgroundColor: "#f0fdfa",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    fontSize: 12,
+    fontWeight: "700"
+  },
+  strongsPanel: {
+    borderColor: "#99f6e4",
+    borderWidth: 1,
+    borderRadius: 8,
+    backgroundColor: "#f0fdfa",
+    padding: 12,
+    gap: 10
+  },
+  strongsDefinition: {
+    gap: 2
   },
   noteForm: {
     marginTop: 12,
