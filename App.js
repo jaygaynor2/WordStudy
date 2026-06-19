@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -115,6 +115,10 @@ function compareStudyVersesByBibleOrder(left, right) {
   const rightIndex = Number(right.verse?.canonicalIndex) || Number.MAX_SAFE_INTEGER;
 
   return leftIndex - rightIndex || String(left.verse?.reference || "").localeCompare(String(right.verse?.reference || ""));
+}
+
+function orderedStudyVerses(study) {
+  return [...(study?.verses || [])].sort(compareStudyVersesByBibleOrder);
 }
 
 function bookNamesFrom(corpus) {
@@ -261,6 +265,8 @@ function downloadWebFile(contents, fileName, type) {
 }
 
 export default function App() {
+  const appScrollRef = useRef(null);
+  const noteCardRefs = useRef({});
   const verses = useMemo(() => loadNestedBookCorpus(kjvCorpus), []);
   const bookNames = useMemo(() => bookNamesFrom(kjvCorpus), []);
   const translations = useMemo(() => translationsFrom(verses), [verses]);
@@ -493,6 +499,37 @@ export default function App() {
     setPage("verses");
   }
 
+  function registerNoteCard(studyVerseId, node) {
+    if (node) {
+      noteCardRefs.current[studyVerseId] = node;
+    } else {
+      delete noteCardRefs.current[studyVerseId];
+    }
+  }
+
+  function scrollToFirstVerseWithoutNotes() {
+    const firstVerseWithoutNotes = orderedStudyVerses(activeStudy).find(studyVerse => !studyVerse.notes.length);
+    if (!firstVerseWithoutNotes) {
+      setError("Every verse in this study has at least one note.");
+      return;
+    }
+
+    setError("");
+    const card = noteCardRefs.current[firstVerseWithoutNotes.id];
+    if (Platform.OS === "web" && card?.scrollIntoView) {
+      card.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    if (card?.measureLayout && appScrollRef.current?.scrollTo) {
+      card.measureLayout(
+        appScrollRef.current,
+        (_x, y) => appScrollRef.current?.scrollTo({ y, animated: true }),
+        () => setError(`Could not jump to ${firstVerseWithoutNotes.verse.reference}.`)
+      );
+    }
+  }
+
   async function exportBackup() {
     const backup = JSON.stringify({
       version: 1,
@@ -715,13 +752,14 @@ export default function App() {
           <View style={styles.pageActions}>
             <Button label={activeStudy ? "Change study" : "Choose study"} secondary onPress={() => setPage("studies")} />
             <Button label="Add more verses" secondary onPress={() => setPage("verses")} />
+            <Button label="First without notes" secondary disabled={!activeStudy?.verses.length} onPress={scrollToFirstVerseWithoutNotes} />
           </View>
         </View>
         {activeStudy ? (
-          activeStudy.verses.length ? [...activeStudy.verses].sort(compareStudyVersesByBibleOrder).map(studyVerse => {
+          activeStudy.verses.length ? orderedStudyVerses(activeStudy).map(studyVerse => {
             const draft = noteDrafts[studyVerse.id] || { group: "", text: "" };
             return (
-              <View style={styles.card} key={studyVerse.id}>
+              <View ref={node => registerNoteCard(studyVerse.id, node)} style={styles.card} key={studyVerse.id}>
                 <Text style={styles.reference}>{studyVerse.verse.reference}</Text>
                 <Text style={styles.verseText}>{studyVerse.verse.text}</Text>
                 <View style={styles.noteForm}>
@@ -776,7 +814,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.appShell}>
+      <ScrollView ref={appScrollRef} contentContainerStyle={styles.appShell}>
         <View style={styles.header}>
           <View>
             <Text style={styles.brandTitle}>Word Study</Text>
