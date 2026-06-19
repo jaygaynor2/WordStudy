@@ -110,6 +110,13 @@ function searchCatalog(verses, query, translation) {
     .sort((left, right) => left.canonicalIndex - right.canonicalIndex);
 }
 
+function compareStudyVersesByBibleOrder(left, right) {
+  const leftIndex = Number(left.verse?.canonicalIndex) || Number.MAX_SAFE_INTEGER;
+  const rightIndex = Number(right.verse?.canonicalIndex) || Number.MAX_SAFE_INTEGER;
+
+  return leftIndex - rightIndex || String(left.verse?.reference || "").localeCompare(String(right.verse?.reference || ""));
+}
+
 function bookNamesFrom(corpus) {
   return (corpus.books || []).reduce((names, book, index) => ({
     ...names,
@@ -711,7 +718,7 @@ export default function App() {
           </View>
         </View>
         {activeStudy ? (
-          activeStudy.verses.length ? activeStudy.verses.map(studyVerse => {
+          activeStudy.verses.length ? [...activeStudy.verses].sort(compareStudyVersesByBibleOrder).map(studyVerse => {
             const draft = noteDrafts[studyVerse.id] || { group: "", text: "" };
             return (
               <View style={styles.card} key={studyVerse.id}>
